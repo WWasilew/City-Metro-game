@@ -1,15 +1,47 @@
 package com.CityMetro;
 
+import java.awt.Color;
+import java.awt.Point;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class Station {
-    Set<Character> possibleStationsNames;
-    String cityName;
+    private Point location;
+    private Color color;
 
-    public Station(String cityName) {
-        this.cityName = cityName;
-        this.possibleStationsNames = createPossibleStations(cityName);
+    public Station(Point location) {
+        this.location = location;
+        this.color = Color.RED; // Domyślny kolor stacji
+    }
+
+    public Point getLocation() {
+        return location;
+    }
+
+    public void setLocation(Point location) {
+        this.location = location;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    public void setColor(Color color) {
+        this.color = color;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Station station = (Station) o;
+        return Objects.equals(location, station.location);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(location);
     }
 
     public Set<Character> createPossibleStations(String CityName) {
@@ -19,9 +51,5 @@ public class Station {
             uniqueChars.add(currentChar);
         }
         return uniqueChars;
-    }
-
-    public Set<Character> getPossibleStations() {
-        return possibleStationsNames;
     }
 }

@@ -17,7 +17,23 @@ public class TrainRoute {
         }
     }
 
+    public void addPointToRouteBegin(Point station) {
+        if (!stations.contains(station)) {
+            stations.add(0, station);
+        }
+    }
+
+    public void addPointToRouteEnd(Point station) {
+        if (!stations.contains(station)) {
+            stations.add(station);
+        }
+    }
+
     public List<Point> getStations() {
         return stations;
+    }
+
+    public int getSize() {
+        return stations.size();
     }
 }
