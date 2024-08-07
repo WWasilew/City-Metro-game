@@ -183,6 +183,10 @@ public class GamePanel extends JPanel {
             removeStationIfTooClose(possibleStations, new Point(stationLocation.x - GRID_SIZE, stationLocation.y - GRID_SIZE));
             removeStationIfTooClose(possibleStations, new Point(stationLocation.x - GRID_SIZE, stationLocation.y));
         }
+
+        // Usuń stacje poza wyznoczonymi granicami x <50, 1000> i y <50, 850>
+        removeStationBeyondBorders(possibleStations);
+
         return possibleStations;
     }
 
@@ -194,10 +198,28 @@ public class GamePanel extends JPanel {
     }
 
     private void removeStationIfTooClose(List<Station> possibleStations, Point location) {
+        if (possibleStations.isEmpty()) {
+            return;
+        }
         Station existingStation = new Station(location);
         if (possibleStations.contains(existingStation)) {
             possibleStations.remove(existingStation);
         }
+    }
+
+    private void removeStationBeyondBorders(List<Station> possibleStations) {
+        if (possibleStations.isEmpty()) {
+            return;
+        }
+        List<Station> correctStations = new ArrayList<>();
+        for (Station station : possibleStations) {
+            Point stationLocation = station.getLocation();
+            if (((stationLocation.x >= 50 && stationLocation.x <= 1000) && (stationLocation.y >= 50 && stationLocation.y <= 850))) {
+                correctStations.add(station);
+            }
+        }
+        possibleStations.clear();
+        possibleStations.addAll(correctStations);
     }
 
     public void whichLineIsThat(Point p) {
@@ -220,8 +242,7 @@ public class GamePanel extends JPanel {
 
     // Sprawdzenie czy możemy dodać linię do stacji
     private boolean canAddLine(Point start, Point end) {
-        int startCount = countLines(start);
-        int endCount = countLines(end);
+        boolean startCount = countLines(start);
         boolean buildingLineFromCorrectSide = false;
 
         for (MetroLine line : metroLines) {
@@ -232,20 +253,23 @@ public class GamePanel extends JPanel {
             }
         }
 
-        return startCount < MAX_LINES_PER_STATION && endCount < MAX_LINES_PER_STATION && buildingLineFromCorrectSide;
+        return startCount && buildingLineFromCorrectSide;
     }
 
     // Pomocnicza do zliczania lini miedzy stacjami
-    private int countLines(Point station) {
+    private boolean countLines(Point station) {
         int count = 0;
-        for (MetroLine line : metroLines) {
-            for (Line l : line.getLines()) {
-                if (l.start.equals(station) || l.end.equals(station)) {
-                    count++;
-                }
+        boolean result = false;
+        whichLineIsThat(station);
+        for (Line l : metroLines.get(metroLineIndex).getLines()) {
+            if (l.start.equals(station) || l.end.equals(station)) {
+                count++;
             }
         }
-        return count;
+        if (count < MAX_LINES_PER_STATION) {
+            result = true;
+        }
+        return result;
     }
 
     // Aktualizowanie trasy wagoników
