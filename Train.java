@@ -1,6 +1,7 @@
 package com.CityMetro;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Train {
@@ -12,6 +13,7 @@ public class Train {
     private boolean atStation; // Flag indicating if the train is at a station
     private long stopTime; // Stop time at each station (1 second)
     private long stopTimer; // Timer to track stop time
+    private List<Passenger> passengers;
 
     public Train(TrainRoute route, int speed) {
         this.route = route;
@@ -22,6 +24,7 @@ public class Train {
         this.atStation = false;
         this.stopTime = 1000; // 1 second stop time at each station in milliseconds
         this.stopTimer = 0;
+        passengers = new ArrayList<>();
     }
 
     public Point getCurrentPosition() {
@@ -48,16 +51,16 @@ public class Train {
         this.forward = forward;
     }
 
-    public void updatePosition() {
+    public int updatePosition() {
         List<Point> stations = route.getStations();
-        if (stations.isEmpty()) return;
+        if (stations.isEmpty()) return -1;
 
         if (atStation) {
             if (System.currentTimeMillis() - stopTimer >= stopTime) {
                 atStation = false;
                 progressToNextSegment();
             }
-            return;
+            return 0;
         }
 
         Point target = forward ? stations.get(currentSegment + 1) : stations.get(currentSegment);
@@ -72,6 +75,7 @@ public class Train {
             currentPosition.setLocation(currentPosition.x + speed * Math.cos(angle),
                                         currentPosition.y + speed * Math.sin(angle));
         }
+        return 1;
     }
 
     private void progressToNextSegment() {
@@ -89,5 +93,17 @@ public class Train {
                 currentSegment++;
             }
         }
+    }
+
+    public void addPassengertoTrain(Passenger passenger) {
+        passengers.add(passenger);
+    }
+
+    public void removePassengerFromTrain(Passenger passenger) {
+        passengers.remove(passenger);
+    }
+
+    public List<Passenger> getPassengers() {
+        return passengers;
     }
 }

@@ -16,6 +16,7 @@ public class ControlPanel extends JPanel {
     private JLabel stationCountLabel;
     private JLabel currentActionLabel;
     private JLabel metroLineIndexLabel;
+    private JLabel passengerCountLabel;
 
     public ControlPanel(GamePanel gamePanel) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -29,6 +30,7 @@ public class ControlPanel extends JPanel {
         stationCountLabel = new JLabel("Stations: 2");
         currentActionLabel = new JLabel("Action: Add Station");
         metroLineIndexLabel = new JLabel("Current metro line: 1");
+        passengerCountLabel = new JLabel("Passengers: 0");
 
         setButtonSize(addStationButton, buttonSize);
         setButtonSize(drawLineButton, buttonSize);
@@ -42,6 +44,7 @@ public class ControlPanel extends JPanel {
         stationCountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         currentActionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         metroLineIndexLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        passengerCountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         add(addStationButton);
         add(Box.createRigidArea(new Dimension(0, 10)));
@@ -56,6 +59,8 @@ public class ControlPanel extends JPanel {
         add(currentActionLabel);
         add(Box.createRigidArea(new Dimension(0, 10)));
         add(metroLineIndexLabel);
+        add(Box.createRigidArea(new Dimension(0, 10)));
+        add(passengerCountLabel);
         add(Box.createRigidArea(new Dimension(0, 10)));
 
         addStationButton.addActionListener(new ActionListener() {
@@ -89,9 +94,11 @@ public class ControlPanel extends JPanel {
         Timer timerForStation = new Timer(100, e -> updateStationCount(gamePanel));
         Timer timerForAction = new Timer(100, e ->updateActionMode(gamePanel));
         Timer timerForActiveMetroLine = new Timer(100, e -> updateActiveMetro(gamePanel));
+        Timer timerForPassengers = new Timer(100, e -> updatePassengerCount(gamePanel));
         timerForStation.start();
         timerForAction.start();
         timerForActiveMetroLine.start();
+        timerForPassengers.start();
     }
 
     private void setButtonSize(JButton button, Dimension size) {
@@ -124,5 +131,10 @@ public class ControlPanel extends JPanel {
     public void updateStationCount(GamePanel gamePanel) {
         int count = gamePanel.CountStations();
         stationCountLabel.setText("Stations: " + count);
+    }
+
+    public void updatePassengerCount(GamePanel gamePanel) {
+        int passengers = gamePanel.getCompletedPassengers();
+        passengerCountLabel.setText("Passengers: " + passengers);
     }
 }

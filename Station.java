@@ -2,17 +2,35 @@ package com.CityMetro;
 
 import java.awt.Color;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
+import java.util.List;
 
 public class Station {
+    public enum Shape {
+        RECTANGLE, TRIANGLE, OVAL
+    }
+
     private Point location;
     private Color color;
+    private Shape shape;
+    private List <Passenger> passengers;
 
     public Station(Point location) {
         this.location = location;
         this.color = Color.RED; // Domyślny kolor stacji
+        setShape(getRandomShape());
+        passengers = new ArrayList<>();
+    }
+
+    public Station(Point location, Shape shape) {
+        this.location = location;
+        this.color = Color.RED; // Domyślny kolor stacji
+        this.shape = shape;
+        passengers = new ArrayList<>();
     }
 
     public Point getLocation() {
@@ -29,6 +47,32 @@ public class Station {
 
     public void setColor(Color color) {
         this.color = color;
+    }
+
+    public Shape getShape() {
+        return shape;
+    }
+
+    public void setShape(Shape shape) {
+        this.shape = shape;
+    }
+
+    public Shape getRandomShape() {
+        Shape[] shapes = Shape.values();
+        int randomIndex = new Random().nextInt(shapes.length);
+        return shapes[randomIndex];
+    }
+
+    public void addPassengerToStation(Passenger passenger) {
+        passengers.add(passenger);
+    }
+
+    public void removePassengerFromStation(Passenger passenger) {
+        passengers.remove(passenger);
+    }
+
+    public List<Passenger> getPassengers() {
+        return passengers;
     }
 
     @Override

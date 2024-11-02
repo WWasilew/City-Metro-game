@@ -1,6 +1,9 @@
 package com.CityMetro;
 
 import javax.swing.*;
+
+import com.CityMetro.Station.Shape;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -18,16 +21,19 @@ public class GamePanel extends JPanel {
     private Point startLine;                // Linia startowa
     private Mode mode;                      // Mówi o tym czy dodajemy stację czy rysujemi linię
     private int metroLineIndex = -1;
+    private int completePassnegers = 0;     // Ile pasażerów już obsłużyiliśmy
     private Point tempTrainPoint;           // Punkt, w którym wyświetla się tymczasowy pociąg
 
     private final int GRID_SIZE = 50;                       // Szerokość siatki
-    private final int STATION_RADIUS = 5;                   // Wymiary kropki
+    private final int STATION_RADIUS = 10;                  // Wymiary kropki
     private final int STATION_CLICK_RADIUS = GRID_SIZE/5;   // Do poszukiwania najblizszej stacji
     private final int MAX_LINES_PER_STATION = 2;            // Ile drog moze byc od jednego punktu
     private final int TRAIN_SPEED = 10;                     // Dodanie szybkości wagoników
     private final int MAX_NUMBER_OF_METRO_LINES = 5;        // Ile maksymalnie linii metra można zbudować
     private final int MIN_DISTANCE_BETWEEN_STATIONS = GRID_SIZE * 2;  // Minimalna odległość między stacjami
     private final int MAX_DISTANCE_BETWEEN_STATIONS = GRID_SIZE * 3;  // Minimalna odległość między stacjami
+    private final int PASSENGER_RADIUS = 5;                           // Rozmiar pasażerów
+    private final int PASSENGER_OFFSET = STATION_RADIUS + 5;          // Odległość od stacji
 
     public enum Mode {
         ADD_STATION,
@@ -71,7 +77,7 @@ public class GamePanel extends JPanel {
                             startLine = nearestStation.getLocation();
                         } else if (mode == Mode.DRAW_LINE) {
                             if (canAddLine(startLine, nearestStation.getLocation())) {
-                                whichLineIsThat(startLine);
+                                //whichLineIsThat(startLine);
                                 Line newLine = new Line(startLine, nearestStation.getLocation());
                                 if (metroLines.get(metroLineIndex).isLineNotAPoint(newLine)) {
                                     metroLines.get(metroLineIndex).addLine(newLine);
@@ -106,6 +112,7 @@ public class GamePanel extends JPanel {
                         }
                     }
                 }
+
             }
         });
 
@@ -133,6 +140,64 @@ public class GamePanel extends JPanel {
         // Timer do automatycznego dodawania stacji
         Timer stationTimer = new Timer(10000, e -> addRandomStation());
         stationTimer.start();
+
+        // Timer do pojawiania się pasażerów
+        Timer passengerTimer = new Timer(10000, e -> addRandomPassenger());
+        passengerTimer.start();
+    }
+
+    public void addRandomPassenger() {
+        Station randomStartStation = getRandomStation();
+        Station randomDestinationStation = getRandomStation();
+        while (randomDestinationStation.getShape().equals(randomStartStation.getShape())) {
+            randomDestinationStation = getRandomStation();
+        }
+        Passenger newPassenger = new Passenger(randomStartStation, randomDestinationStation);
+        randomStartStation.addPassengerToStation(newPassenger);
+    }
+
+    public void managePassengers(Train train){
+        Point stationLocation = train.getCurrentPosition();
+        whichLineIsThat(stationLocation);
+        int i = 0;
+        int stationIndex = 0;
+        for(Station station : stations) {
+            if (station.getLocation().equals(stationLocation)) {
+                stationIndex = i;
+            }
+            ++i;
+        }
+        Station station = stations.get(stationIndex);
+
+        // Usuwanie pasażerów z pociągu, jeśli dotarli do stacji
+        List<Passenger> passengersToRemove = new ArrayList<>();
+        for (Passenger passenger : train.getPassengers()) {
+            if (passenger.getShape().equals(station.getShape())) {
+                passengersToRemove.add(passenger);
+                completePassnegers++;
+        }
+        }
+        // Usuń pasażerów po iteracji
+        for (Passenger passenger : passengersToRemove) {
+            train.removePassengerFromTrain(passenger);
+        }
+
+        // Dodawanie pasażerów do pociągu z aktualnej stacji
+        List<Passenger> passengersToAdd = new ArrayList<>(station.getPassengers());
+        for (Passenger passenger : passengersToAdd) {
+            train.addPassengertoTrain(passenger);
+            station.removePassengerFromStation(passenger);
+        }
+    }
+
+    // Funkcja do losowania stacji
+    private Station getRandomStation() {
+        if (stations.isEmpty()) {
+            return null;
+        }
+        Random random = new Random();
+        int randomIndex = random.nextInt(stations.size());
+        return stations.get(randomIndex);
     }
 
     public void addStation(Point p) {
@@ -237,21 +302,59 @@ public class GamePanel extends JPanel {
     public void addMetroLine() {
         metroLineIndex = metroLines.size();
         metroLines.add(new MetroLine());                // Dodanie nowej linni metra
+        metroLines.get(metroLineIndex).setMetroIndex(metroLineIndex);
         routes.add(new TrainRoute());                   // Dodanie nowej trasy dla wagoników
+    }
+
+    private List<Integer> getMetroLinesForStation(Point station) {
+        List<Integer> connectedLines = new ArrayList<>();
+        for (MetroLine metroLine : metroLines) {
+            for (Line line : metroLine.getLines()) {
+                if (line.start.equals(station) || line.end.equals(station)) {
+                    connectedLines.add(metroLine.getMetroIndex());
+                    break;
+                }
+            }
+        }
+        return connectedLines;
     }
 
     // Sprawdzenie czy możemy dodać linię do stacji
     private boolean canAddLine(Point start, Point end) {
-        boolean startCount = countLines(start);
         boolean buildingLineFromCorrectSide = false;
+        List<Integer> connectedLines = getMetroLinesForStation(start);
 
-        for (MetroLine line : metroLines) {
-            for (Line canConnect : line.getLines()) {
-                if (start == canConnect.start || start == canConnect.end) {
-                    buildingLineFromCorrectSide = true;
-                }
+        // Jeśli jest więcej niż jedna linia metra podłączona do stacji, wybierz linię metra z okna dialogowego
+        if (connectedLines.size() > 1) {
+            String[] lineNames = new String[connectedLines.size()];
+            for (int i = 0; i < connectedLines.size(); i++) {
+                lineNames[i] = metroLines.get(connectedLines.get(i)).getColorName();
             }
+            String selectedLine = (String) JOptionPane.showInputDialog(
+                    this,
+                    "Select the metro line to extend:",
+                    "Choose Metro Line",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    lineNames,
+                    lineNames[0]
+            );
+            if (selectedLine != null) {
+                for (int i = 0; i < connectedLines.size(); i++) {
+                    if (metroLines.get(connectedLines.get(i)).getColorName().equals(selectedLine)) {
+                        metroLineIndex = connectedLines.get(i);
+                        break;
+                    }
+                }
+                buildingLineFromCorrectSide = true;
+            } else {
+                return false;
+            }
+        } else if (connectedLines.size() == 1) {
+            metroLineIndex = connectedLines.get(0);
+            buildingLineFromCorrectSide = true;
         }
+        boolean startCount = countLines(start);
 
         return startCount && buildingLineFromCorrectSide;
     }
@@ -260,7 +363,7 @@ public class GamePanel extends JPanel {
     private boolean countLines(Point station) {
         int count = 0;
         boolean result = false;
-        whichLineIsThat(station);
+        //whichLineIsThat(station);
         for (Line l : metroLines.get(metroLineIndex).getLines()) {
             if (l.start.equals(station) || l.end.equals(station)) {
                 count++;
@@ -300,9 +403,31 @@ public class GamePanel extends JPanel {
     // Funkcja która odświeża położenie wagoników
     private void updateTrains() {
         for (Train train : trains) {
-            train.updatePosition();
+            int whatToDo = train.updatePosition();
+            if(whatToDo == -1) {
+                return;
+            } else if (whatToDo == 0) {
+                //System.out.println("I am at station");
+                managePassengers(train);
+            }
         }
         repaint();
+    }
+
+    private void paintRectangle(Graphics2D g2d, int x, int y, int radius) {
+        g2d.fillRect(x - radius, y - radius, radius*2, radius*2);
+    }
+
+    private void paintOval(Graphics2D g2d, int x, int y, int radius) {
+        g2d.fillOval(x-radius, y-radius, radius*2, radius*2);
+    }
+
+    private void paintTriangle(Graphics2D g2d, int x, int y, int radius) {
+        Polygon triangle = new Polygon();
+        triangle.addPoint(x, y - radius);
+        triangle.addPoint(x - radius, y + radius);
+        triangle.addPoint(x + radius, y + radius);
+        g2d.fillPolygon(triangle);
     }
 
     @Override
@@ -329,7 +454,21 @@ public class GamePanel extends JPanel {
         // Rysowanie stacji
         for (Station station : stations) {
             g2d.setColor(station.getColor());
-            g2d.fillOval(station.getLocation().x - STATION_RADIUS, station.getLocation().y - STATION_RADIUS, STATION_RADIUS * 2, STATION_RADIUS * 2);
+            int x = station.getLocation().x;
+            int y = station.getLocation().y;
+            switch (station.getShape()) {
+                case RECTANGLE:
+                paintRectangle(g2d, x, y, STATION_RADIUS);
+                break;
+
+                case TRIANGLE:
+                paintTriangle(g2d, x, y, STATION_RADIUS);
+                break;
+
+                case OVAL:
+                paintOval(g2d, x, y, STATION_RADIUS);
+                break;
+            }
         }
 
         // Rysowanie tymczasowej stacji na szaro
@@ -355,6 +494,61 @@ public class GamePanel extends JPanel {
         for (Train train : trains) {
             Point pos = train.getCurrentPosition();
             g2d.fillRect(pos.x - STATION_RADIUS / 2, pos.y - STATION_RADIUS / 2, STATION_RADIUS, STATION_RADIUS);
+        }
+
+        // Rysowanie pasażerów na stacjach
+        for (Station station : stations) {
+            int passengerIndex = 0; // Pozycjonowanie pasażerów wokół stacji
+            for (Passenger passenger : station.getPassengers()) {
+                // Wyznaczenie pozycji pasażera wokół stacji
+                int x = station.getLocation().x - (passengerIndex * (PASSENGER_RADIUS * 2 + 5)) - PASSENGER_OFFSET;
+                int y = station.getLocation().y - PASSENGER_OFFSET;
+
+                // Rysowanie pasażera
+                g2d.setColor(Color.RED); // Kolor pasażerów
+                switch (passenger.getShape()) {
+                    case RECTANGLE:
+                    paintRectangle(g2d, x, y, PASSENGER_RADIUS);
+                    break;
+
+                    case TRIANGLE:
+                    paintTriangle(g2d, x, y, PASSENGER_RADIUS);
+                    break;
+
+                    case OVAL:
+                    paintOval(g2d, x, y, PASSENGER_RADIUS);
+                    break;
+                }
+                passengerIndex++;
+            }
+        }
+
+        // Rysowanie pasażerów w kolejkach
+        for (Train train : trains) {
+            int passengerIndex = 0; // Pozycjonowanie pasażerów wokół stacji
+            for (Passenger passenger : train.getPassengers()) {
+                // Wyznaczenie pozycji pasażera wokół stacji
+                Point currentPosition = train.getCurrentPosition();
+                int x = currentPosition.x + (passengerIndex * (PASSENGER_RADIUS * 2 + 5)) + PASSENGER_OFFSET;
+                int y = currentPosition.y - PASSENGER_OFFSET;
+
+                // Rysowanie pasażera
+                g2d.setColor(Color.RED); // Kolor pasażerów
+                switch (passenger.getShape()) {
+                    case RECTANGLE:
+                    paintRectangle(g2d, x, y, PASSENGER_RADIUS);
+                    break;
+
+                    case TRIANGLE:
+                    paintTriangle(g2d, x, y, PASSENGER_RADIUS);
+                    break;
+
+                    case OVAL:
+                    paintOval(g2d, x, y, PASSENGER_RADIUS);
+                    break;
+                }
+                passengerIndex++;
+            }
         }
     }
 
@@ -389,6 +583,8 @@ public class GamePanel extends JPanel {
         Point HomeStation2 = new Point(400, 400);
         addStation(HomeStation1);
         addStation(HomeStation2);
+        stations.get(0).setShape(Shape.OVAL);
+        stations.get(1).setShape(Shape.RECTANGLE);
     }
 
     public void setMode(Mode mode) {
@@ -401,6 +597,10 @@ public class GamePanel extends JPanel {
 
     public int CountStations() {
         return stations.size();
+    }
+
+    public int getCompletedPassengers() {
+        return completePassnegers;
     }
 
     public int getMetroLineIndex() {

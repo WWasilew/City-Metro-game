@@ -6,6 +6,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -96,25 +97,34 @@ public static JPanel loggingMenu() {
 }
 
 public static JPanel chooseCityMenu() {
-    // Tworzenie panelu menu wyboru miasta
-    JPanel cityPanel = new JPanel(new GridBagLayout());
+    // Tworzenie głównego panelu z układem BorderLayout
+    JPanel cityPanel = new JPanel(new BorderLayout());
+
+    // Panel na górze z napisem "Logged: ..."
+    JLabel userLabel = new JLabel("Logged: " + logged.getName(), SwingConstants.RIGHT);
+    JPanel northPanel = new JPanel(new BorderLayout());
+    northPanel.add(userLabel, BorderLayout.EAST);
+
+    // Panel środkowy z przyciskami wyboru miasta
+    JPanel buttonPanel = new JPanel(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(5, 5, 5, 5);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+
     JLabel cityLabel = new JLabel("Choose a city where you want to build your metro: ");
     gbc.gridx = 0;
     gbc.gridy = 0;
     gbc.gridwidth = 2;
-    gbc.fill = GridBagConstraints.NONE;
-    cityPanel.add(cityLabel, gbc);
+    buttonPanel.add(cityLabel, gbc);
 
     String[] cities = {"Warsaw", "Moscow", "Paris", "Berlin", "Madrid"};
     gbc.gridwidth = 1;
     gbc.gridy = 1;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
     for (int i = 0; i < cities.length; i++) {
         JButton cityButton = new JButton(cities[i]);
-        gbc.gridx = 1;
+        gbc.gridx = 0;
         gbc.gridy = i + 1;
-        cityPanel.add(cityButton, gbc);
+        buttonPanel.add(cityButton, gbc);
 
         cityButton.addActionListener(new ActionListener() {
             @Override
@@ -126,15 +136,13 @@ public static JPanel chooseCityMenu() {
         });
     }
 
-    // Dodanie napisu z nickiem użytkownika w prawym górnym rogu
-    JLabel userLabel = new JLabel("Logged: " + logged.getName());
-    gbc.gridx = 2;
-    gbc.gridy = 0;
-    gbc.anchor = GridBagConstraints.NORTHEAST;
-    cityPanel.add(userLabel, gbc);
+    // Dodanie panelu z napisem na górze i panelu z przyciskami do głównego panelu
+    cityPanel.add(northPanel, BorderLayout.NORTH);
+    cityPanel.add(buttonPanel, BorderLayout.CENTER);
 
     return cityPanel;
 }
+
 
 private static void RunGame() {
     JFrame gameFrame = new JFrame("City metro Game: " + logged.getCity());
