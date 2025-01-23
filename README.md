@@ -62,10 +62,9 @@ Follow these steps to play the City Metro Game on your computer.
 
 ```
 City-Metro-game/
-├── assets/                            # Game assets (images, sounds, etc.)
+├── assets/                            # Game assets
 ├── src/
 │   ├── game/                          # Core game logic and mechanics
-│   ├── graphics/                      # Rendering and visuals
 │   ├── utils/                         # Helper functions and utilities
 │   └── CityMetroApplication.java      # Entry point for the game
 ├── requirements.txt                   # List of dependencies
