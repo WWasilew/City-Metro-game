@@ -99,8 +99,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 Created by [WWasilew](https://github.com/WWasilew). If you have any questions or feedback, feel free to reach out!
-
----
-
-Enjoy designing your own metro system and keep your city moving! ✨
-
